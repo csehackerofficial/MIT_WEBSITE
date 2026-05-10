@@ -55,3 +55,13 @@ def download_video():
 if __name__ == '__main__':
     # Local testing ke liye port 5000 theek hai
     app.run(debug=True, port=5000)
+
+# Max Quality Settings with Cookies
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+        'noplaylist': True,
+        'cookiefile': os.path.join(BASE_DIR, 'cookies.txt'), # Ye line add karein
+        'nocheckcertificate': True, # Verification issues se bachne ke liye
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
