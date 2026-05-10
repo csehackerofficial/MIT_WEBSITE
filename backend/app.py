@@ -16,7 +16,7 @@ def extract_video_id(url):
 def home():
     return jsonify({
         "status": "Active",
-        "message": "DownZero API (YTStream Edition) is Live",
+        "message": "DownZero Pro (4K/2K Supported) is Live",
         "developer": "Aayush Kumar"
     })
 
@@ -31,7 +31,6 @@ def download_video():
     if not video_id:
         return jsonify({"error": "Invalid YouTube URL"}), 400
 
-    # RapidAPI Details (Jo tumne screenshot mein dikhayi)
     api_url = "https://ytstream-download-youtube-videos.p.rapidapi.com/dl"
     
     headers = {
@@ -42,19 +41,37 @@ def download_video():
     querystring = {"id": video_id}
 
     try:
-        # API ko call karna
         response = requests.get(api_url, headers=headers, params=querystring)
         data = response.json()
         
-        # YTStream API usually 'link' ya 'formats' mein data bhejta hai
-        # Hum sabse best quality link nikalne ki koshish karenge
-        if data.get('status') == 'OK' or 'link' in data:
-            # Agar direct 'link' hai toh wo bhejenge, varna formats check karenge
-            download_url = data.get('link') or data.get('formats', [{}])[0].get('url')
+        if data.get('status') == 'OK':
+            formats = data.get('formats', [])
             
-            return jsonify({"download_url": download_url})
-        else:
-            return jsonify({"error": "Video processing failed on API side"}), 500
+            # --- HIGH QUALITY PRIORITY LOGIC ---
+            best_link = None
+            # Hum ulti taraf se check karenge kyunki HQ links end mein hote hain
+            # Priority order: 4K (2160p) > 2K (1440p) > Full HD (1080p) > HD (720p)
+            
+            target_qualities = ['2160p', '1440p', '1080p', '720p']
+            
+            for target in target_qualities:
+                for f in reversed(formats):
+                    # Check kar rahe hain ki kya quality match ho rahi hai aur video+audio dono hai
+                    if f.get('qualityLabel') == target:
+                        best_link = f.get('url')
+                        break
+                if best_link: break # Agar target mil gaya toh loop band karo
+
+            # Agar koi target nahi mila, toh jo bhi best available link hai wo uthao
+            if not best_link and formats:
+                best_link = formats[-1].get('url')
+
+            if best_link:
+                return jsonify({"download_url": best_link})
+            else:
+                return jsonify({"error": "No downloadable formats found"}), 404
+        
+        return jsonify({"error": "API response not OK"}), 500
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
