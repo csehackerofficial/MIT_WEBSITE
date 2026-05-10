@@ -30,21 +30,20 @@ def download_video():
 
     # Professional HQ Settings with Bot-Bypass
     ydl_opts = {
-        # HQ MP4 format selection
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
         'noplaylist': True,
         'nocheckcertificate': True,
         'quiet': False,
-        # TRICK: YouTube ko Android App dikhane ke liye
+        # Multi-client bypass strategy
         'extractor_args': {
             'youtube': {
-                'player_client': ['android'],
+                'player_client': ['ios', 'android', 'web_embedded'],
                 'skip': ['dash', 'hls']
             }
         },
-        # Mobile User Agent taaki bot detection bypass ho sake
-        'user_agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+        # Ek aur trick: YouTube ko lagega ki request purane browser se hai jo block nahi hota
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
     }
 
     try:
