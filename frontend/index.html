@@ -142,7 +142,7 @@
         <p class="subtitle">Zero Ads. Zero Limits.</p>
         
         <!-- Action URL needs your Render link -->
-        <form action="https://aapka-render-wala-url.onrender.com/download" method="POST">
+        <form action="https://downzero-api.onrender.com/" method="POST">
             <!-- aria-label added for accessibility (SEO ranking factor) -->
             <input type="url" name="url" placeholder="PASTE VIDEO LINK HERE" required aria-label="Video URL Input">
             <button type="submit">Download Video</button>
@@ -151,5 +151,21 @@
         <footer>MAXIMUM AVAILABLE QUALITY PROCESSED</footer>
     </main>
 
+    <script>
+    const form = document.querySelector('form');
+    const btn = document.querySelector('button');
+
+    form.onsubmit = () => {
+        btn.innerText = "Processing... Please wait";
+        btn.style.backgroundColor = "#444";
+        btn.disabled = true;
+        // 10 second baad button wapas normal kar dena agar download shuru na ho
+        setTimeout(() => {
+            btn.innerText = "Download Video";
+            btn.style.backgroundColor = "#ffffff";
+            btn.disabled = false;
+        }, 15000);
+    };
+</script>
 </body>
 </html>
