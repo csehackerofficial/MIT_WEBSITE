@@ -4,54 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- ==========================================
-         MASTER LEVEL SEO TAGS
-    =========================================== -->
-    <!-- Primary Meta Tags -->
+    <link rel="icon" href="https://www.gstatic.com/youtube/img/branding/favicon/favicon_144x144.png" type="image/png">
+
     <title>DownZero | Maximum Quality Video Downloader</title>
     <meta name="title" content="DownZero | Maximum Quality Video Downloader">
-    <meta name="description" content="DownZero is a minimalist, maximum-quality video downloader. Download high-resolution videos instantly with zero ads, zero wait times, and zero distractions.">
+    <meta name="description" content="DownZero is a minimalist, maximum-quality video downloader. Download high-resolution videos instantly with zero ads and zero distractions.">
     <meta name="keywords" content="video downloader, high quality downloader, 4k video download, mp4 download, zero ads downloader, DownZero, yt download">
-    <meta name="author" content="DownZero">
+    <meta name="author" content="thecsehacker">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://your-netlify-url.netlify.app/">
 
-    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://your-netlify-url.netlify.app/">
     <meta property="og:title" content="DownZero | Maximum Quality Video Downloader">
-    <meta property="og:description" content="Download high-resolution videos instantly with zero ads, zero wait times, and zero distractions.">
-    <!-- Add an actual image URL below later for link previews -->
-    <meta property="og:image" content="https://your-netlify-url.netlify.app/og-image.jpg">
+    <meta property="og:description" content="Download high-resolution videos instantly with zero ads and zero distractions.">
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://your-netlify-url.netlify.app/">
-    <meta property="twitter:title" content="DownZero | Maximum Quality Video Downloader">
-    <meta property="twitter:description" content="Download high-resolution videos instantly with zero ads, zero wait times, and zero distractions.">
-    <meta property="twitter:image" content="https://your-netlify-url.netlify.app/og-image.jpg">
-
-    <!-- JSON-LD Schema Markup (Tells Google exactly what this app is) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "DownZero",
-      "url": "https://your-netlify-url.netlify.app/",
-      "description": "A minimalist, maximum-quality video downloader with zero ads and zero distractions.",
-      "applicationCategory": "MultimediaApplication",
-      "operatingSystem": "All",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
-    }
-    </script>
-
-    <!-- ==========================================
-         PURE BLACK & WHITE STOIC STYLES
-    =========================================== -->
     <style>
         body { 
             background-color: #000000; 
@@ -104,11 +69,6 @@
             color: #555555; 
             letter-spacing: 1px;
         }
-        input[type="url"]:focus { 
-            background-color: #0a0a0a; 
-            border-color: #ffffff; 
-            box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
-        }
         button { 
             width: 100%; 
             background-color: #ffffff; 
@@ -123,9 +83,10 @@
             letter-spacing: 1px;
             transition: 0.2s ease; 
         }
-        button:hover { 
-            background-color: #cccccc; 
-        }
+        button:hover { background-color: #cccccc; }
+        button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
+        
+        #error-msg { color: #ff3333; font-size: 11px; margin-top: 15px; display: none; }
         footer { 
             margin-top: 30px; 
             font-size: 10px; 
@@ -136,36 +97,64 @@
 </head>
 <body>
 
-    <!-- Semantic HTML5 tags for better SEO -->
     <main>
         <h1>DownZero</h1>
         <p class="subtitle">Zero Ads. Zero Limits.</p>
         
-        <!-- Action URL needs your Render link -->
-        <form action="https://downzero-api.onrender.com/download" method="POST" id="dlForm">
-            <!-- aria-label added for accessibility (SEO ranking factor) -->
+        <form id="dlForm">
             <input type="url" name="url" placeholder="PASTE VIDEO LINK HERE" required aria-label="Video URL Input">
-            <button type="submit">Download Video</button>
+            <button type="submit" id="dlBtn">Download Video</button>
         </form>
+
+        <div id="error-msg">Error: Please try again later.</div>
 
         <footer>MAXIMUM AVAILABLE QUALITY PROCESSED</footer>
     </main>
 
     <script>
-    const form = document.querySelector('form');
-    const btn = document.querySelector('button');
+        const form = document.getElementById('dlForm');
+        const btn = document.getElementById('dlBtn');
+        const errorMsg = document.getElementById('error-msg');
 
-    form.onsubmit = () => {
-        btn.innerText = "Processing... Please wait";
-        btn.style.backgroundColor = "#444";
-        btn.disabled = true;
-        // 10 second baad button wapas normal kar dena agar download shuru na ho
-        setTimeout(() => {
-            btn.innerText = "Download Video";
-            btn.style.backgroundColor = "#ffffff";
-            btn.disabled = false;
-        }, 15000);
-    };
-</script>
+        form.onsubmit = async (e) => {
+            e.preventDefault(); // Default form submit roko
+            
+            // UI Update
+            btn.innerText = "GENERATING LINK...";
+            btn.disabled = true;
+            errorMsg.style.display = "none";
+
+            const formData = new FormData(form);
+
+            try {
+                // Backend API call (Render URL)
+                const response = await fetch('https://downzero-api.onrender.com/download', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.download_url) {
+                    // Download link milne par redirect karo
+                    btn.innerText = "STARTING DOWNLOAD";
+                    window.location.href = data.download_url;
+                } else {
+                    throw new Error(data.error || "Failed to fetch link");
+                }
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.innerText = "ERROR: " + err.message;
+                errorMsg.style.display = "block";
+            } finally {
+                // 10 second baad button wapas normal
+                setTimeout(() => {
+                    btn.innerText = "DOWNLOAD VIDEO";
+                    btn.disabled = false;
+                }, 10000);
+            }
+        };
+    </script>
 </body>
 </html>

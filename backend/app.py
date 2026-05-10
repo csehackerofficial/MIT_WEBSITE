@@ -1,61 +1,63 @@
-from flask import Flask, request, send_file, jsonify
+import requests
+import re
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-import yt_dlp
-import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Path setup taaki Render confusion na kare
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
-
-if not os.path.exists(DOWNLOAD_FOLDER):
-    os.makedirs(DOWNLOAD_FOLDER)
+# Function: YouTube URL se Video ID nikalne ke liye
+def extract_video_id(url):
+    reg = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+    match = re.search(reg, url)
+    return match.group(1) if match else None
 
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
         "status": "Active",
-        "message": "DownZero Backend is running at full capacity.",
-        "client": "Android-Bypass-Active"
+        "message": "DownZero API (YTStream Edition) is Live",
+        "developer": "Aayush Kumar"
     })
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    url = request.form.get('url')
+    user_url = request.form.get('url')
     
-    if not url:
-        return "Error: URL missing.", 400
+    if not user_url:
+        return jsonify({"error": "URL missing"}), 400
 
-    # Professional HQ Settings with Bot-Bypass
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
-        'noplaylist': True,
-        'nocheckcertificate': True,
-        'quiet': False,
-        # Multi-client bypass strategy
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['ios', 'android', 'web_embedded'],
-                'skip': ['dash', 'hls']
-            }
-        },
-        # Ek aur trick: YouTube ko lagega ki request purane browser se hai jo block nahi hota
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+    video_id = extract_video_id(user_url)
+    if not video_id:
+        return jsonify({"error": "Invalid YouTube URL"}), 400
+
+    # RapidAPI Details (Jo tumne screenshot mein dikhayi)
+    api_url = "https://ytstream-download-youtube-videos.p.rapidapi.com/dl"
+    
+    headers = {
+        "x-rapidapi-key": "ac016ebcdfmsh938111d895fed16p1d5882jsn0f080106dfc7",
+        "x-rapidapi-host": "ytstream-download-youtube-videos.p.rapidapi.com"
     }
+    
+    querystring = {"id": video_id}
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filepath = ydl.prepare_filename(info)
+        # API ko call karna
+        response = requests.get(api_url, headers=headers, params=querystring)
+        data = response.json()
+        
+        # YTStream API usually 'link' ya 'formats' mein data bhejta hai
+        # Hum sabse best quality link nikalne ki koshish karenge
+        if data.get('status') == 'OK' or 'link' in data:
+            # Agar direct 'link' hai toh wo bhejenge, varna formats check karenge
+            download_url = data.get('link') or data.get('formats', [{}])[0].get('url')
             
-        return send_file(filepath, as_attachment=True)
+            return jsonify({"download_url": download_url})
+        else:
+            return jsonify({"error": "Video processing failed on API side"}), 500
 
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    # Local test ke liye port 5000, Render khud ka port manage kar lega
     app.run(debug=True, port=5000)
