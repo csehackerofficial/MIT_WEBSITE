@@ -2,12 +2,11 @@ from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import yt_dlp
 import os
-import shutil
 
 app = Flask(__name__)
 CORS(app)
 
-# Absolute path setup taaki server confuse na ho
+# Path setup taaki Render confusion na kare
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
 
@@ -18,7 +17,8 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 def home():
     return jsonify({
         "status": "Active",
-        "message": "DownZero Backend is running at full capacity."
+        "message": "DownZero Backend is running at full capacity.",
+        "client": "Android-Bypass-Active"
     })
 
 @app.route('/download', methods=['POST'])
@@ -28,11 +28,23 @@ def download_video():
     if not url:
         return "Error: URL missing.", 400
 
+    # Professional HQ Settings with Bot-Bypass
     ydl_opts = {
-        # HQ format selection
+        # HQ MP4 format selection
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
         'noplaylist': True,
+        'nocheckcertificate': True,
+        'quiet': False,
+        # TRICK: YouTube ko Android App dikhane ke liye
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android'],
+                'skip': ['dash', 'hls']
+            }
+        },
+        # Mobile User Agent taaki bot detection bypass ho sake
+        'user_agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
     }
 
     try:
@@ -40,28 +52,11 @@ def download_video():
             info = ydl.extract_info(url, download=True)
             filepath = ydl.prepare_filename(info)
             
-        # Video file ko browser mein bhejna
-        response = send_file(filepath, as_attachment=True)
-
-        # Download ke baad file delete karne ke liye (Optional but recommended for Render)
-        # Note: Direct delete yahan nahi hoga kyunki send_file file ko read kar raha hota hai.
-        # Aap periodic cleanup use kar sakte hain ya manually delete kar sakte hain.
-        
-        return response
+        return send_file(filepath, as_attachment=True)
 
     except Exception as e:
         return f"Error: {str(e)}", 500
 
 if __name__ == '__main__':
-    # Local testing ke liye port 5000 theek hai
+    # Local test ke liye port 5000, Render khud ka port manage kar lega
     app.run(debug=True, port=5000)
-
-# Max Quality Settings with Cookies
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
-        'noplaylist': True,
-        'cookiefile': os.path.join(BASE_DIR, 'cookies.txt'), # Ye line add karein
-        'nocheckcertificate': True, # Verification issues se bachne ke liye
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
