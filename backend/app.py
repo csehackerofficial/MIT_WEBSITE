@@ -2,18 +2,18 @@ from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import yt_dlp
 import os
+import shutil
 
 app = Flask(__name__)
-
-# CORS enable karna zaroori hai taaki Netlify is backend ko call kar sake
 CORS(app)
 
-# Downloads folder create karna
-DOWNLOAD_FOLDER = 'downloads'
+# Absolute path setup taaki server confuse na ho
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
+
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
-# Base route bas check karne ke liye ki server chal raha hai ya nahi
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
@@ -23,17 +23,16 @@ def home():
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    # Frontend se URL receive karna
     url = request.form.get('url')
     
     if not url:
-        return "Error: Koi URL nahi diya gaya.", 400
+        return "Error: URL missing.", 400
 
-    # Max Quality Settings
     ydl_opts = {
+        # HQ format selection
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': f'{DOWNLOAD_FOLDER}/%(title)s.%(ext)s',
-        'noplaylist': True, # Ek bar me ek hi video download ho, puri playlist nahi
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+        'noplaylist': True,
     }
 
     try:
@@ -41,12 +40,18 @@ def download_video():
             info = ydl.extract_info(url, download=True)
             filepath = ydl.prepare_filename(info)
             
-        # Video file ko direct browser me bhejna
-        return send_file(filepath, as_attachment=True)
+        # Video file ko browser mein bhejna
+        response = send_file(filepath, as_attachment=True)
+
+        # Download ke baad file delete karne ke liye (Optional but recommended for Render)
+        # Note: Direct delete yahan nahi hoga kyunki send_file file ko read kar raha hota hai.
+        # Aap periodic cleanup use kar sakte hain ya manually delete kar sakte hain.
+        
+        return response
 
     except Exception as e:
         return f"Error: {str(e)}", 500
 
 if __name__ == '__main__':
-    # Default port 5000 par run karna
+    # Local testing ke liye port 5000 theek hai
     app.run(debug=True, port=5000)
